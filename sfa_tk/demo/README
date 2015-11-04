@@ -1,0 +1,15 @@
+This directory contains four demo scripts:
+
+- sfatk_demo.m reproduces an example from Wiskott, L. and Sejnowski,
+  T.J. (2002), "Slow Feature Analysis: Unsupervised Learning of
+  Invariances", Neural Computation, 14(4):715-770, Figure 2 and
+  illustrates the basic sfa-tk functions.
+
+- long_dataset_demo.m solves the same problem as sfatk_demo.m. It
+  illustrates how to perform SFA on long data sets.
+
+- expansion_demo.m shows how to perform SFA on user-defined function
+  spaces. This script uses two functions defined in the subdirectory
+  expansion_demo/ .
+
+- getHf_demo.m illustrates how to use the sfa_getHf function.
