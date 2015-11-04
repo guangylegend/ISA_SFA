@@ -44,9 +44,18 @@ l1_tp_size = params.fovea{1}.dense_sample_size;
  act_l2 =zeros(params.pca_dim_l2/params.group_size_l2*params.fovea{2}.dense_sample_size,num_blks);
  act_l1_abssum= zeros(1, num_blks);
  
-
-parfor offset = 0:x_steps*y_steps*t_steps-1
+ batch_nums = 1;
+ batch_size = ceil(num_blks/batch_nums);
+ for batch_num = 0:batch_nums-1
+     real_batch_size = min(batch_size,num_blks-batch_num*batch_size);
+     act_isa_l2 = cell(params.num_clips/params.merge_clips,l1_tp_size*t_sub_steps);
+     act_sfa_l2 = cell(params.num_clips/params.merge_clips);
      isa2_in = cell(l1_tp_size*t_sub_steps,1);
+     for i=1:params.fovea{1}.temporal_size
+         isa2_in{i} = zeros(l1_sp_size*x_sub_steps*y_sub_steps,real_batch_size);
+     end
+    for batch_offset = 0:real_batch_size-1
+     offset = batch_num*batch_size+batch_offset;
      isa2_in_tmp = zeros(l1_sp_size*x_sub_steps*y_sub_steps,l1_tp_size*t_sub_steps);
      x_offset = floor(offset/(y_steps*t_steps));
      y_offset = mod(floor(offset/t_steps),y_steps); 
@@ -82,8 +91,7 @@ parfor offset = 0:x_steps*y_steps*t_steps-1
                             sfa_in{ii} = whitening(sfa_in{ii});
                             act_sfa_l1{ii} = sfa_in{ii}*sfa_network_all{ii};
                             end
-                            act = find_slowest(act_sfa_l1);
-                             sub_blk_act_l1 = act;
+                             sub_blk_act_l1 = act_sfa_l1{1};
                         %%........ l1 output for sub_blk..............%%
                        % add sub_blk_act_l1 to blk_act
                              sp_index = (y_step-1)*x_sub_steps+x_step;
@@ -102,29 +110,31 @@ parfor offset = 0:x_steps*y_steps*t_steps-1
       act_l1_pca_reduced(:,offset+1) = tmp;
        for i=1:l1_tp_size*t_sub_steps
         % sigmoid 
-        isa2_in_tmp(:,i) = 1./(1+exp(-isa2_in_tmp(:,i)));
-        isa2_in{i} = isa2_in_tmp(:,i);
+        %isa2_in_tmp(:,i) = 1./(1+exp(-isa2_in_tmp(:,i)));
+        isa2_in{i}(:,batch_offset+1) = isa2_in_tmp(:,i);
       end
       %%.........calculate convolve l1 output for blk .......... 
+    end
       %% calculate l2 output for blk
-      act_isa_l2 = cell(params.num_clips/params.merge_clips,l1_tp_size*t_sub_steps);
-      act_sfa_l2 = cell(params.num_clips/params.merge_clips,1);
        for ii=1:params.num_clips/params.merge_clips
             for jj=1:l1_tp_size*t_sub_steps
                 act_isa_l2{ii,jj} = activateISA(isa2_in{jj}, isa2_network_all{ii,jj}{1,1});                                
             end
        end
-       sfa2_in = reshape_isa_out_to_sfa_in(act_isa_l2,params,1,2);
+       sfa2_in = reshape_isa_out_to_sfa_in(act_isa_l2,params,real_batch_size,2);
         %% do sfa
         for ii=1:params.num_clips/params.merge_clips
-        sfa2_in{ii} = whitening(sfa2_in{ii});
-        act_sfa_l2{ii} = sfa2_in{ii}*sfa2_network_all{ii};
+            for jj=1:real_batch_size
+        sfa2_in{ii}(:,:,jj) = whitening(sfa2_in{ii}(:,:,jj));
+        act_sfa_l2{ii}(:,:,jj) = sfa2_in{ii}(:,:,jj)*sfa2_network_all{ii};
+            end
         end
-        act_sfa_l2 = find_slowest(act_sfa_l2);
+        %act_sfa_l2 = find_slowest(act_sfa_l2);
         % sigmoid
         %act_sfa_l2 = 1./(1+exp(act_sfa_l2));
         %record act_l2
-        act_l2(:,offset+1) = act_sfa_l2;
+        act_l2(:,batch_num*batch_size+1:(batch_num)*batch_size+real_batch_size) = ...
+            act_sfa_l2{1};
 end
 X_fill = 0;
 ds_count = 1;
