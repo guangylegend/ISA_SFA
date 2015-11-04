@@ -17,9 +17,6 @@ function V = train_SFA(X)
     [V,D] = eig(M);
     V = -V;
     V = V(:,1);
-    length = size(V,1);
-    V = rand(length,1).*2-ones(length,1);
-    V = ones(length,1);
     %Y = -V'*input;
     %Y = Y';
 
