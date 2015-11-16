@@ -4,7 +4,7 @@ function params = set_network_params()
 params.par_num = 10;
 
 %% layer 
-params.num_layer = 2;
+params.num_layer = 1;
 %% merge vedio
 params.merge_clips = 100;
 params.merge_clips2 = 100;
