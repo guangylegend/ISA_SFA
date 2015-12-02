@@ -18,7 +18,9 @@ end
      end
  end
  %}
+ %save('./isa1_output.mat','isa_output');
  sfa_in = reshape_isa_out_to_sfa_in(isa_output,params,params.patches_per_clip*params.merge_clips,1);
+ save('./isa1_output.mat','sfa_in');
  sfa_network_all = cell(params.num_clips/params.merge_clips,1);
  %% train sfa
  for i=1:params.num_clips/params.merge_clips

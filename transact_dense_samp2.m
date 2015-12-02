@@ -112,6 +112,8 @@ for batch_num = 0:batch_nums-1
          l1_out(((x_index-1)*y_sub_steps+y_index-1)*l1_sp_size+1:((x_index-1)*y_sub_steps+y_index)*l1_sp_size,...
             ((t_index-1)*l1_tp_size)+1:t_index*l1_tp_size,:) = reshape(act_sfa_l1{1,ii+1},l1_sp_size,l1_tp_size,[]);
      end
+     %sqrt
+     l1_out= abs(l1_out).^(0.5).*sign(l1_out);
      % abssum
       act_l1_abssum(:, batch_num*batch_size+1:(batch_num)*batch_size+real_batch_size) = ...
           sum(reshape(abs(l1_out),l1_sp_size*x_sub_steps*y_sub_steps*l1_tp_size*t_sub_steps,[]), 1); 
@@ -122,11 +124,14 @@ for batch_num = 0:batch_nums-1
               isa2_network_all{1,tt}{1,1}.V(1:params.pca_dim_l2/params.group_size_l2,:)*reshape(l1_out(:,tt,:),size(l1_out,1),size(l1_out,3),[]);
      end
     
-       for i=1:l1_tp_size*t_sub_steps
         % sigmoid 
-        l1_out(:,i,:) = 1./(1+exp(-l1_out(:,i,:)));
-        isa2_in{i} = reshape(l1_out(:,i,:),size(l1_out,1),size(l1_out,3),[]);
-      end
+        %l1_out(:,i,:) = 1./(1+exp(-l1_out(:,i,:)));
+        
+        %nomalize
+        l1_out = l1_out-min(min(min(l1_out)))./(max(max(max(l1_out)))-min(min(min(l1_out))));
+        for i=1:l1_tp_size*t_sub_steps
+            isa2_in{i} = reshape(l1_out(:,i,:),size(l1_out,1),size(l1_out,3),[]);
+        end
       %%.........calculate convolve l1 output for blk .......... 
       %% calculate l2 output for blk
       act_isa_l2 = cell(params.num_clips/params.merge_clips,l1_tp_size*t_sub_steps);
@@ -147,6 +152,8 @@ for batch_num = 0:batch_nums-1
         act_sfa_l2 = act_sfa_l2{1};
         % sigmoid
         %act_sfa_l2 = 1./(1+exp(act_sfa_l2));
+        %sqrt
+        act_sfa_l2 = abs(act_sfa_l2).^(0.5).*sign(act_sfa_l2);
         %record act_l2
         act_l2(:,batch_num*batch_size+1:(batch_num)*batch_size+real_batch_size) = act_sfa_l2;
      
